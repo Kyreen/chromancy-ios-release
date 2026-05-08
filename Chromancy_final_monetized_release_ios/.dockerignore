@@ -1,0 +1,14 @@
+node_modules
+dist
+android/app/build
+android/.gradle
+android/build
+.git
+.vercel
+.env
+.env.*
+*.log
+*.zip
+*.apk
+*.aab
+_delivery_with_apk

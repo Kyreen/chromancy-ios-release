@@ -1,0 +1,58 @@
+{
+  "applicationId": "com.chromancy.app",
+  "currency": "ZAR",
+  "subscriptions": [
+    {
+      "subscriptionId": "chromancy_pro",
+      "basePlanId": "monthly",
+      "revenueCatProductId": "chromancy_pro:monthly",
+      "title": "Chromancy Pro Monthly",
+      "priceZar": 179.99,
+      "benefits": [
+        "40 monthly AI credits",
+        "HD exports",
+        "Beam mode premium export path"
+      ]
+    },
+    {
+      "subscriptionId": "chromancy_premium",
+      "basePlanId": "monthly",
+      "revenueCatProductId": "chromancy_premium:monthly",
+      "title": "Chromancy Premium Monthly",
+      "priceZar": 249.99,
+      "benefits": [
+        "60 monthly AI credits",
+        "Priority processing",
+        "HD exports",
+        "Premium tier access"
+      ]
+    }
+  ],
+  "oneTimeProducts": [
+    {
+      "productId": "chromancy_wallet_50",
+      "title": "Chromancy Wallet R50",
+      "priceZar": 50
+    },
+    {
+      "productId": "chromancy_wallet_100",
+      "title": "Chromancy Wallet R100",
+      "priceZar": 100
+    },
+    {
+      "productId": "chromancy_wallet_200",
+      "title": "Chromancy Wallet R200",
+      "priceZar": 200
+    },
+    {
+      "productId": "chromancy_wallet_500",
+      "title": "Chromancy Wallet R500",
+      "priceZar": 500
+    }
+  ],
+  "notes": [
+    "Create subscriptions first, then create the monthly base plan for each subscription.",
+    "Use the same product IDs in Google Play Console and RevenueCat.",
+    "Wallet products should be configured as one-time products."
+  ]
+}

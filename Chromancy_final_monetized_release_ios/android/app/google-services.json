@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "51608421110",
+    "project_id": "chromancy-699a7",
+    "storage_bucket": "chromancy-699a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:51608421110:android:8ef2208734e8a6dcb822d7",
+        "android_client_info": {
+          "package_name": "com.chromancy.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "51608421110-4lflp4j4vvm1ft1i2m841cg3t832djvn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chromancy.app",
+            "certificate_hash": "931cca72575946395bdcda913cbcc1683e50908b"
+          }
+        },
+        {
+          "client_id": "51608421110-6mt7gr69it056vvtpk69trkqf5gdh1rh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chromancy.app",
+            "certificate_hash": "10f9d04cd4dca2355c9290b49f1238f83d67613d"
+          }
+        },
+        {
+          "client_id": "51608421110-r384r8dnhr50kcqcrg1ptu80kjitp45c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyUivNIRY9IT5Ui9X8B522fQgBQ8TaPdU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "51608421110-r384r8dnhr50kcqcrg1ptu80kjitp45c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

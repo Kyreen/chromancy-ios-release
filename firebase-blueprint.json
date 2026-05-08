@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User account and tier information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "tier": { "type": "string", "enum": ["free", "pay-as-you-use", "pro"] },
+        "unlockedProjects": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["uid", "tier"]
+    },
+    "projects": {
+      "title": "Project",
+      "description": "User created designs, photos, and videos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["design", "photo", "video"] },
+        "originalUrl": { "type": "string" },
+        "enhancedUrl": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "isPremium": { "type": "boolean" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "userId", "name", "type", "originalUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile document"
+    },
+    "/projects/{projectId}": {
+      "schema": "projects",
+      "description": "Project document"
+    }
+  }
+}
