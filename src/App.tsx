@@ -429,39 +429,39 @@ export default function App() {
   if (isLoading) return <LoadingScreen />;
 
   return (
-  <div
-    style={{
-      minHeight: "var(--app-height, 100dvh)",
-      height: "var(--app-height, 100dvh)",
-      paddingTop: "env(safe-area-inset-top)",
-      paddingBottom: "env(safe-area-inset-bottom)",
-      boxSizing: "border-box",
-      overflow: "hidden",
-      background: "#000",
-    }}
-  >
-    <ErrorBoundary>
-      {hasAcceptedTerms ? (
-        <Layout activeTab={activeTab} setActiveTab={navigateTo} tier={tier} user={user} profile={profile}>
-          <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
-        </Layout>
-      ) : (
-        <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
-      )}
-      <Toaster
-        theme="dark"
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "#1a1a1a",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "#fff",
-            borderRadius: "1rem",
-            fontFamily: "Roboto, sans-serif",
-          },
-        }}
-      />
-    </ErrorBoundary>
-  </div>
+ <div
+  style={{
+   minHeight: "var(--app-height, 100dvh)",
+   height: "var(--app-height, 100dvh)",
+   paddingTop: "calc(env(safe-area-inset-top, 0px) + 22px)",
+   paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+   boxSizing: "border-box",
+   overflow: "hidden",
+   background: "#000",
+ }}
+>
+ <ErrorBoundary>
+  {hasAcceptedTerms ? (
+   <Layout activeTab={activeTab} setActiveTab={navigateTo} tier={tier} user={user} profile={profile}>
+    <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
+   </Layout>
+ ) : (
+   <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
+ )}
+ <Toaster
+     theme="dark"
+     position="top-center"
+     toastOptions={{
+     style: {
+     background: "#1a1a1a",
+     border: "1px solid rgba(255,255,255,0.1)",
+     color: "#fff",
+     borderRadius: "1rem",
+     fontFamily: "Roboto, sans-serif",
+    },
+   }}
+  />
+ </ErrorBoundary>
+ </div>
 );
 }
