@@ -429,6 +429,17 @@ export default function App() {
   if (isLoading) return <LoadingScreen />;
 
   return (
+  <div
+    style={{
+      minHeight: "var(--app-height, 100dvh)",
+      height: "var(--app-height, 100dvh)",
+      paddingTop: "env(safe-area-inset-top)",
+      paddingBottom: "env(safe-area-inset-bottom)",
+      boxSizing: "border-box",
+      overflow: "hidden",
+      background: "#000",
+    }}
+  >
     <ErrorBoundary>
       {hasAcceptedTerms ? (
         <Layout activeTab={activeTab} setActiveTab={navigateTo} tier={tier} user={user} profile={profile}>
@@ -451,5 +462,6 @@ export default function App() {
         }}
       />
     </ErrorBoundary>
-  );
+  </div>
+);
 }
