@@ -62,7 +62,7 @@ const bundlePricing: Record<UnlockCategory, BundlePricingPreview> = {
     uses: 1,
     label: "AI Business tools",
     displayPrice: "R20 / R39",
-    summary: "Level Up tools use the final AI wallet tiers depending on the tool. CREATE currently costs R39 or 3 AI Credits.",
+    summary: "Level Up tools use the final AI wallet tiers depending on the tool. CREATE currently costs R39.",
     note: "Wallet top-ups: R50 / R100 / R200 / R500.",
   },
 };
