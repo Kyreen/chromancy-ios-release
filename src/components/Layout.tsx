@@ -13,7 +13,6 @@ import {
   LogOut,
   ChevronDown,
   LogIn,
-  Crown,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "../lib/utils";
@@ -103,8 +102,8 @@ export function Layout({ children, activeTab, setActiveTab, tier, user }: Layout
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-xl hover:bg-white/5 transition-colors"
                     >
-                      <Crown className="w-4 h-4" />
-                      <span>Upgrade</span>
+                      <Wallet className="w-4 h-4" />
+                      <span>Open Wallet</span>
                     </button>
                   )}
                   <button
