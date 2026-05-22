@@ -1,12 +1,10 @@
 import { ChevronLeft, FileCheck, ShieldCheck, Sparkles } from "lucide-react";
-import { formatZarAmount, formatZarUsd, getWalletTopUpLabel, premiumMonthlyPricing, subscriptionPlanPricing } from "../lib/pricing";
+import { getWalletTopUpLabel } from "../lib/pricing";
 
 interface TermsOfUseProps {
   onAccept: () => void;
   onBack?: () => void;
 }
-
-const premiumPlan = subscriptionPlanPricing.find((plan) => plan.planId === "premium");
 
 const sections = [
   {
@@ -23,7 +21,7 @@ const sections = [
   },
   {
     title: "4. Payments and wallet",
-    body: `Pro Monthly is ${formatZarUsd(premiumMonthlyPricing.zar)} per month including VAT and includes 40 AI Credits Monthly, Unlimited Beam Mode, No Beam Mode Watermark, and HD Exports. Premium Monthly is R${formatZarAmount(premiumPlan?.monthlyZar || 249.99)} per month including VAT and includes ${premiumPlan?.monthlyAiCredits || 60} AI Credits, Monthly Unlimited Beam Mode, No Beam Mode Watermark, HD Exports, and Priority Processing. AI wallet pricing uses per-tool tiers of R12, R20, and R39 depending on the tool selected. CREATE currently costs R39 from wallet funds or 3 AI Credits from an active subscription. EDIT WITH PROMPT currently costs R39 from wallet funds or 1 AI Credit from an active subscription. Retry pricing is 50% of the original tool price. Wallet top-ups are ${getWalletTopUpLabel()}. Before any paid AI feature starts, CHROMANCY shows the exact wallet-fund or AI-credit cost. Failed AI generations are refunded or released. Beam Mode remains free and never uses wallet or AI credits.`,
+    body: `AI wallet pricing uses per-tool tiers of R12, R20, and R39 depending on the tool selected. Wallet top-ups are ${getWalletTopUpLabel()}. Before any paid AI feature starts, CHROMANCY shows the exact wallet-fund cost. Failed AI generations are refunded or released. Beam Mode remains free and never uses wallet funds.`,
   },
   {
     title: "5. Exports",
