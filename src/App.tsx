@@ -406,7 +406,7 @@ export default function App() {
       case "business":
         return <BusinessTools tier={tier} onNavigate={navigateTo} />;
       case "wallet":
-        return <SubscriptionPage user={user} profile={profile} tier={tier} onBack={navigateBack} initialView="unlock" onTierChange={setBillingTier} />;
+        return <SubscriptionPage user={user} profile={profile} tier={tier} onBack={navigateBack} />;
       case "history":
         return <LocalHistoryPage onBack={navigateBack} />;
       case "settings":
@@ -418,7 +418,7 @@ export default function App() {
       case "terms":
         return <TermsOfUse onAccept={() => navigateTo("settings")} onBack={navigateBack} />;
       case "subscribe":
-        return <SubscriptionPage user={user} profile={profile} tier={tier} onBack={navigateBack} initialView="premium" onTierChange={setBillingTier} />;
+        return <SubscriptionPage user={user} profile={profile} tier={tier} onBack={navigateBack} />;
       case "dataSafety":
         return <DataSafetyPage onBack={navigateBack} />;
       default:
@@ -429,39 +429,27 @@ export default function App() {
   if (isLoading) return <LoadingScreen />;
 
   return (
- <div
-  style={{
-   minHeight: "var(--app-height, 100dvh)",
-   height: "var(--app-height, 100dvh)",
-   paddingTop: "calc(env(safe-area-inset-top, 0px) + 22px)",
-   paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
-   boxSizing: "border-box",
-   overflow: "hidden",
-   background: "#000",
- }}
->
- <ErrorBoundary>
-  {hasAcceptedTerms ? (
-   <Layout activeTab={activeTab} setActiveTab={navigateTo} tier={tier} user={user} profile={profile}>
-    <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
-   </Layout>
- ) : (
-   <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
- )}
- <Toaster
-     theme="dark"
-     position="top-center"
-     toastOptions={{
-     style: {
-     background: "#1a1a1a",
-     border: "1px solid rgba(255,255,255,0.1)",
-     color: "#fff",
-     borderRadius: "1rem",
-     fontFamily: "Roboto, sans-serif",
-    },
-   }}
-  />
- </ErrorBoundary>
- </div>
-);
+    <ErrorBoundary>
+      {hasAcceptedTerms ? (
+        <Layout activeTab={activeTab} setActiveTab={navigateTo} tier={tier} user={user} profile={profile}>
+          <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
+        </Layout>
+      ) : (
+        <Suspense fallback={<LoadingScreen />}>{content}</Suspense>
+      )}
+      <Toaster
+        theme="dark"
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: "#1a1a1a",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "#fff",
+            borderRadius: "1rem",
+            fontFamily: "Roboto, sans-serif",
+          },
+        }}
+      />
+    </ErrorBoundary>
+  );
 }
