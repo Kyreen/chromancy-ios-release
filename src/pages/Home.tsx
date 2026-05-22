@@ -4,12 +4,10 @@ import {
   Image as ImageIcon,
   Video,
   Briefcase,
-  Sparkles,
-  ShieldCheck,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { UserTier } from "../types";
-import { formatZarAmount, getWalletTopUpLabel, setSubscriptionView, subscriptionPlanPricing } from "../lib/pricing";
+import { getWalletTopUpLabel, setSubscriptionView } from "../lib/pricing";
 
 interface HomeProps {
   onNavigate: (tab: string) => void;
@@ -17,10 +15,6 @@ interface HomeProps {
 }
 
 export function Home({ onNavigate }: HomeProps) {
-  const proPlan = subscriptionPlanPricing.find((plan) => plan.planId === "pro");
-  const premiumPlan = subscriptionPlanPricing.find((plan) => plan.planId === "premium");
-  const proPrice = `R${formatZarAmount(proPlan?.monthlyZar || 179.99)}`;
-  const premiumPrice = `R${formatZarAmount(premiumPlan?.monthlyZar || 249.99)}`;
   const tools = [
     { id: "fix", icon: Wand2, label: "Polish", color: "from-white via-white to-slate-100", description: "Make visuals look better, cleaner, sharper & more polished." },
     { id: "photo", icon: ImageIcon, label: "Photo Enhancements", color: "from-white via-zinc-50 to-stone-100", description: "Fix, enhance, and transform photos in seconds." },
@@ -61,7 +55,7 @@ export function Home({ onNavigate }: HomeProps) {
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">Plans</h3>
+        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">Access</h3>
         <div className="grid gap-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -88,53 +82,6 @@ export function Home({ onNavigate }: HomeProps) {
             </div>
             <p className="text-xs text-white/55">Top up your wallet to use AI tools once off.</p>
             <p className="text-[11px] text-white/35">Available for all users. Top-ups: {getWalletTopUpLabel()}.</p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSubscriptionView("premium");
-              onNavigate("subscribe");
-            }}
-            className="text-left rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 transition-all hover:bg-white/10 active:scale-[0.99]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold">Pro Subscription</p>
-                <p className="text-xs text-white/45 mt-1">{proPrice} monthly subscription</p>
-              </div>
-              <ShieldCheck className="w-4 h-4 text-white/45" />
-            </div>
-            <div className="space-y-1 text-xs text-white/55">
-              <p>40 AI Credits Monthly</p>
-              <p>Unlimited Beam Mode</p>
-              <p>No Beam Mode Watermark</p>
-              <p>HD Exports</p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSubscriptionView("premium");
-              onNavigate("subscribe");
-            }}
-            className="text-left rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-4 space-y-3 transition-all hover:bg-white/10 active:scale-[0.99]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold">Premium Subscription</p>
-                <p className="text-xs text-white/45 mt-1">{premiumPrice} monthly subscription</p>
-              </div>
-              <Sparkles className="w-4 h-4 text-white/55" />
-            </div>
-            <div className="space-y-1 text-xs text-white/55">
-              <p>60 AI Credits</p>
-              <p>Unlimited Beam Mode</p>
-              <p>No Beam Mode Watermark</p>
-              <p>HD Exports</p>
-              <p>Priority Processing</p>
-            </div>
           </button>
         </div>
       </section>
