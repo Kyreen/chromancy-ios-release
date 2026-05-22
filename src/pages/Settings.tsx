@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
   User,
-  ShieldCheck,
   Bell,
   Smartphone,
   HelpCircle,
@@ -246,10 +245,8 @@ export function Settings({ user, profile, tier, onBack, onNavigate, onTierChange
       title: "Account",
       items: [
         { icon: User, label: "Profile Information", value: user?.displayName || "User", onClick: () => setShowProfileEditor((v) => !v), hasArrow: true },
-        { icon: ShieldCheck, label: "Subscription Plan", value: isSubscriberTier(tier) ? "Active" : undefined, onClick: () => { setSubscriptionView("premium"); onNavigate("subscribe"); }, hasArrow: true },
         { icon: Crown, label: "Wallet Top-ups", onClick: () => { setSubscriptionView("unlock"); onNavigate("subscribe"); }, hasArrow: true },
         { icon: RefreshCcw, label: "Restore Purchase", value: isRestoring ? "Restoring..." : undefined, onClick: handleRestore, hasArrow: false },
-        { icon: Crown, label: "Upgrade to Premium", value: isSubscriberTier(tier) ? "Active" : undefined, onClick: () => { setSubscriptionView("premium"); onNavigate("subscribe"); }, hasArrow: true },
       ],
     },
     {
@@ -356,7 +353,7 @@ export function Settings({ user, profile, tier, onBack, onNavigate, onTierChange
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
           <div className="flex items-center gap-2 text-sm font-bold"><Crown className="w-4 h-4" /> AI Wallet</div>
-          <p className="text-xs text-white/50 leading-6">Wallet top-ups are {getWalletTopUpLabel()}. AI tools use R12, R20, or R39 wallet tiers. Subscription details are listed on the Plans page.</p>
+          <p className="text-xs text-white/50 leading-6">Wallet top-ups are {getWalletTopUpLabel()}. AI tools use R12, R20, or R39 wallet tiers. Open the wallet page to top up and review transaction history.</p>
           <button onClick={() => { setSubscriptionView("unlock"); onNavigate("subscribe"); }} className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-white/10 bg-black/20 font-bold uppercase tracking-widest text-xs hover:bg-white/5 transition-all">
             Open Wallet &amp; Transaction History
           </button>
