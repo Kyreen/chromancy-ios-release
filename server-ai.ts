@@ -248,7 +248,7 @@ const AI_VIDEO_TIMEOUT_MS = Math.max(AI_MODEL_TIMEOUT_MS, Number(process.env.CHR
 const AI_VIDEO_POLL_INTERVAL_MS = Math.max(1_500, Number(process.env.CHROMANCY_AI_VIDEO_POLL_INTERVAL_MS || 2_000));
 
 function getDefaultImageSize(): "1K" | "2K" {
-  return process.env.CHROMANCY_AI_IMAGE_SIZE === "2K" ? "2K" : "1K";
+  return String(process.env.CHROMANCY_AI_IMAGE_SIZE || "2K").toUpperCase() === "1K" ? "1K" : "2K";
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
@@ -499,20 +499,23 @@ function createFallbackAnimatePlan(rawPrompt: string): ServerAnimatePlan {
     normalizedPrompt,
     contentType: "generic still image",
     primarySubject: "the most visually important subject in the uploaded image",
-    motionStrategy: "Use the strongest believable premium motion for the detected content. Lead with clear primary-subject motion whenever possible. If direct subject motion is weak, combine it with visible cinematic camera drift, layered parallax, light movement, or environmental motion so the result unmistakably animates without distorting the image.",
+    motionStrategy: "Use the strongest believable premium motion for the detected content and make the animation obviously alive from the first second. Lead with clear primary-subject motion whenever the subject can move naturally. If the subject is static, create unmistakable premium motion with controlled cinematic camera travel, layered depth parallax, moving reflections, atmosphere, light sweeps, energy motion, environmental life, or highlight motion while keeping the original composition elegant and stable.",
     secondaryMotion: [
-      "Motion must be clearly visible early in the clip and must not feel like a frozen still.",
-      "Add only tasteful support motion that fits the content type and reinforces the main movement.",
-      "Prefer a clearly animated premium result over a static near-still output.",
+      "Motion must be clearly visible early in the clip and must never read like a frozen still with tiny accidental movement.",
+      "Add tasteful support motion that fits the content type and reinforces the main movement without noise or wobble.",
+      "Prefer an obviously animated premium result over a safe near-static output.",
+      "For people, use believable blink, breathing, posture life, hair sway, cloth movement, hand micro-motion, or expression life where appropriate.",
+      "For products, cars, interiors, graphics, or food, use elegant camera push, drift, parallax, light sweeps, reflections, atmosphere, or surface shimmer that reads premium and intentional.",
     ],
     keepStable: [
       "Keep identity, framing, composition, text, and important geometry stable.",
-      "Keep subject edges, facial structure, products, and unrelated regions calm and artifact-free.",
+      "Keep subject edges, facial structure, products, wheels, logos, text, and unrelated regions calm and artifact-free.",
     ],
     avoid: [
       "Avoid whole-frame wobble, morphing, duplicate limbs, warped faces, broken text, and rubbery motion.",
       "Do not output a barely-moving clip that still reads like a static image.",
       "Do not refuse a usable still image just because it has no face or limited natural motion.",
+      "Avoid weak motion, random drift, breathing walls, melted geometry, floating accessories, or unstable perspective.",
     ],
     preferCameraOnly: false,
   };
@@ -665,21 +668,24 @@ async function planAnimateRequest(imageUrl: string, rawPrompt: string): Promise<
           {
             text: `You are a premium image-to-video motion planner for Chromancy.
 
-Inspect the uploaded still image and produce the strongest clean motion plan for animating it.
+Inspect the uploaded still image and produce the strongest clean motion plan for animating it into an obviously moving premium clip.
 
 Rules:
 - Correctly classify the content type.
 - Identify the true primary subject.
 - Choose the most believable motion strategy for this exact image.
 - Never reject a usable image just because there is no face or no obvious body motion.
-- If the image is static, product-focused, vehicle-focused, poster-like, document-like, graphic, or architectural, prefer premium camera drift, controlled parallax, tasteful light motion, atmospheric movement, or highlight motion so the clip still visibly animates.
+- The result must look intentionally animated almost immediately. Do not plan weak motion.
+- If the image is static, product-focused, vehicle-focused, poster-like, document-like, graphic, or architectural, prefer premium camera travel, controlled parallax, tasteful light motion, moving reflections, atmospheric movement, highlight motion, surface shimmer, or depth movement so the clip still visibly animates.
 - If the image contains a person, pet, or living subject, prefer realistic micro-motion first, then add restrained camera movement only if it helps.
 - The final clip must look animated immediately, not like a still frame with tiny accidental movement.
 - For people or pets, prefer believable blink, breathing, posture life, hair or clothing sway, and subtle head or hand micro-motion when appropriate.
-- For products, food, cars, interiors, posters, or static scenes, prefer strong but elegant camera drift, layered parallax, moving reflections, light sweeps, atmosphere, depth motion, or environmental movement that keeps the image premium and stable.
+- For products, food, cars, interiors, posters, or static scenes, prefer strong but elegant camera drift, layered parallax, moving reflections, light sweeps, atmosphere, depth motion, environmental movement, or premium surface motion that keeps the image premium and stable.
+- If the user prompt asks for energy, drama, glamour, luxury, action, or hype, reflect that in the motion strategy while still preserving realism and structure.
 - Preserve identity, text, object geometry, composition, and important scene integrity exactly.
 - Avoid morphing, wobble, duplicate limbs, rubbery motion, broken text, warped wheels, or drifting facial features.
 - Produce a motion plan that helps the downstream video model succeed, not a refusal.
+- When in doubt, choose the stronger tasteful motion plan rather than the safer static plan.
 
 User intent:
 ${fallback.normalizedPrompt}`,
@@ -1006,7 +1012,7 @@ export async function enhancePhoto(
     text: `You are a professional photo editor. ${instruction}.
     ${promptEditPlan ? `${buildPromptEditPlanInstructions(promptEditPlan)}
     ` : ""}
-    
+   
     SPECIFIC TOOL RULES:
     - Smooth Skin: Only perform skin smoothing and blemish reduction. Do not alter face shape, eyes, lips, nose, jawline, or identity. Preserve facial landmarks and geometry. Keep pores and skin realism intact.
     - Fix Lighting: Adjust exposure, highlights, shadows, contrast, white balance, and tone only. Correct both overexposed and underexposed images cleanly while keeping skin tones natural and preserving the original subject and scene. Do not alter pose, face, hands, hair, body, or background content.
@@ -1021,7 +1027,7 @@ export async function enhancePhoto(
     - Fix Type: Analyze all text and typography in the design. Detect and fix typos and grammatical errors. Improve weak or boring copy to be more engaging and high-traction. Optimize wording to fit the design's intent and layout perfectly. Preserve the overall design style and message.
     - Make Professional / Brand Photo: Brand the uploaded photo itself. Keep the original photo recognisable and intact. Add only the provided logo and only the requested user text as a premium editorial overlay, luxury lower-third, refined translucent brand panel, elegant corner lockup, or polished gradient/fade treatment. If no logo is provided, do not invent one. If no user text is provided, do not add any text. Use strong hierarchy, clean spacing, balanced margins, tasteful typography, subtle shadows, precise logo placement, and commercial social-ad polish. Do not make it look like a basic sticker or plain text strip. Do not turn the photo into a separate poster or unrelated graphic. Do not damage the logo.
     - Level Up Business Tools: For Mockup Generator, Food Enhancer, Brand Photo, and Product/Studio shots, make the result premium enough for a paid commercial app. Prefer realistic professional lighting, controlled contrast, clean materials, accurate perspective, tasteful brand restraint, sharp detail, and artifact-free execution. Do not use cheap AI gloss, warped backgrounds, random text, distorted logos, or overprocessed effects.
-    
+   
     STRICT GLOBAL SUBJECT RULE: Do not change the subject's structure, anatomy, pose, identity, likeness, or facial geometry. Preserve eyes, nose, lips, jawline, cheeks, skin texture placement, hairline, expression anatomy, and body proportions exactly. Never face-swap, beautify by morphing, regenerate a different person, or subtly change facial features.
     STRICT BODY RULE: Body changes, pose changes, limb changes, hand changes, or posture changes are forbidden for every tool except Pose Perfect. Only Pose Perfect may change the body, and only according to the user's explicit instruction.
     STRICT BACKGROUND RULE: Preserve important scene elements unless the tool explicitly requests removal or replacement. Do not accidentally alter protected objects, clothing details, or subject accessories.
@@ -1444,8 +1450,8 @@ export async function generateVideo(imageUrl: string, prompt: string): Promise<S
   const fallbackVideoModel = process.env.GEMINI_VIDEO_MODEL;
   const videoModels = Array.from(new Set([
     configuredVideoModel,
-    "veo-3.1-fast-generate-preview",
     "veo-3.1-generate-preview",
+    "veo-3.1-fast-generate-preview",
     fallbackVideoModel,
     "veo-2.0-generate-001",
   ].filter((model): model is string => !!model?.trim())));
@@ -1453,7 +1459,7 @@ export async function generateVideo(imageUrl: string, prompt: string): Promise<S
   const promptVariants = buildAnimatePromptVariants(animatePlan);
   const videoConfig: Record<string, unknown> = {
     numberOfVideos: 1,
-    resolution: process.env.CHROMANCY_AI_VIDEO_RESOLUTION || "720p",
+    resolution: process.env.CHROMANCY_AI_VIDEO_RESOLUTION || "1080p",
   };
   const requestedAspectRatio = process.env.CHROMANCY_AI_VIDEO_ASPECT_RATIO;
   if (requestedAspectRatio) {
