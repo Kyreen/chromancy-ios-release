@@ -10,6 +10,7 @@
         "preview": "vite preview",
         "clean": "rm -rf dist",
         "lint": "tsc --noEmit",
+        "admin:credit": "node scripts/admin-credit-account.mjs",
         "qa:release": "node scripts/release-qa-check.mjs",
         "android:sync": "npx cap sync android",
         "android:open": "npx cap open android",
