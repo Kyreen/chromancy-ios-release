@@ -1,0 +1,298 @@
+import "dotenv/config";
+import fs from "fs/promises";
+import path from "path";
+import crypto from "crypto";
+import { fileURLToPath } from "url";
+import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+const DATA_DIR = path.join(PROJECT_ROOT, "data");
+const STORE_PATH = path.join(DATA_DIR, "usage-store.json");
+const HASH_SALT = process.env.CHROMANCY_USAGE_SALT || "chromancy-local-salt-change-me";
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "";
+const USAGE_STORE_COLLECTION = process.env.CHROMANCY_USAGE_STORE_COLLECTION || "server_private";
+const USAGE_STORE_DOC_ID = process.env.CHROMANCY_USAGE_STORE_DOC_ID || "billing_usage_store";
+const FORCE_LOCAL_USAGE_STORE = String(process.env.CHROMANCY_USE_LOCAL_USAGE_STORE || "false") === "true";
+
+function parseArgs(argv) {
+  const result = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const entry = argv[index];
+    if (!entry.startsWith("--")) continue;
+    const key = entry.slice(2);
+    const next = argv[index + 1];
+    if (!next || next.startsWith("--")) {
+      result[key] = true;
+      continue;
+    }
+    result[key] = next;
+    index += 1;
+  }
+  return result;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const requestedWalletCents = Number(args["wallet-cents"] || 0);
+const requestedWalletZar = Number(args["wallet-zar"] || 0);
+const requestedProCredits = Number(args["pro-credits"] || 0);
+const reason = String(args.reason || "Manual support grant");
+const dryRun = args["dry-run"] === true;
+
+function usage(message) {
+  if (message) {
+    console.error(message);
+  }
+  console.error(
+    [
+      "Usage:",
+      "  node scripts/admin-credit-account.mjs --uid <firebase_uid> [--wallet-zar 39 | --wallet-cents 3900] [--pro-credits 5] [--reason \"Support correction\"] [--dry-run]",
+      "  node scripts/admin-credit-account.mjs --email <user@example.com> [--wallet-zar 39 | --wallet-cents 3900] [--pro-credits 5] [--reason \"Support correction\"] [--dry-run]",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+
+if (!args.uid && !args.email) {
+  usage("Provide either --uid or --email.");
+}
+
+if (!Number.isFinite(requestedWalletCents) || !Number.isFinite(requestedWalletZar) || !Number.isFinite(requestedProCredits)) {
+  usage("Wallet and pro-credit values must be numeric.");
+}
+
+const walletCents = requestedWalletCents > 0
+  ? Math.round(requestedWalletCents)
+  : requestedWalletZar > 0
+    ? Math.round(requestedWalletZar * 100)
+    : 0;
+const proCredits = requestedProCredits > 0 ? Math.round(requestedProCredits) : 0;
+
+if (walletCents <= 0 && proCredits <= 0) {
+  usage("Provide a positive --wallet-zar, --wallet-cents, or --pro-credits amount.");
+}
+
+function emptyCredits() {
+  return { photo: 0, video: 0, design: 0, business: 0 };
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function makeId(prefix = "tx") {
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+}
+
+function normalizeRecordMap(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function normalizeTransactions(value) {
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+}
+
+function hashValue(value) {
+  return crypto.createHash("sha256").update(`${HASH_SALT}:${value}`).digest("hex");
+}
+
+function getAccountKey(uid) {
+  return `acct:${hashValue(uid)}`;
+}
+
+function normalizeStore(value) {
+  const raw = value && typeof value === "object" ? value : {};
+  return {
+    accounts: normalizeRecordMap(raw.accounts),
+    devices: normalizeRecordMap(raw.devices),
+    ipTrials: normalizeRecordMap(raw.ipTrials),
+    ipToolTrials: normalizeRecordMap(raw.ipToolTrials),
+  };
+}
+
+function ensureAccount(store, accountKey) {
+  const existing = store.accounts[accountKey];
+  if (existing && typeof existing === "object") {
+    existing.credits = existing.credits && typeof existing.credits === "object" ? { ...emptyCredits(), ...existing.credits } : emptyCredits();
+    existing.premiumUsage = existing.premiumUsage && typeof existing.premiumUsage === "object" ? { ...emptyCredits(), ...existing.premiumUsage } : emptyCredits();
+    existing.freeTrials = existing.freeTrials && typeof existing.freeTrials === "object" ? { ...emptyCredits(), ...existing.freeTrials } : emptyCredits();
+    existing.walletCents = Math.round(Number(existing.walletCents) || 0);
+    existing.proCredits = Math.max(0, Math.round(Number(existing.proCredits) || 0));
+    existing.transactions = normalizeTransactions(existing.transactions);
+    existing.holds = normalizeRecordMap(existing.holds);
+    existing.jobs = normalizeRecordMap(existing.jobs);
+    existing.processedPurchases = normalizeRecordMap(existing.processedPurchases);
+    existing.processedPurchaseFingerprints = normalizeRecordMap(existing.processedPurchaseFingerprints);
+    existing.processedWebhookEvents = normalizeRecordMap(existing.processedWebhookEvents);
+    existing.reversedPurchases = normalizeRecordMap(existing.reversedPurchases);
+    return existing;
+  }
+
+  const created = {
+    credits: emptyCredits(),
+    premiumUsage: emptyCredits(),
+    premiumUsageMonth: nowIso().slice(0, 7),
+    freeTrials: emptyCredits(),
+    walletCents: 0,
+    proCredits: 0,
+    toolFreeTrials: {},
+    transactions: [],
+    holds: {},
+    jobs: {},
+    processedPurchases: {},
+    processedPurchaseFingerprints: {},
+    processedWebhookEvents: {},
+    reversedPurchases: {},
+  };
+  store.accounts[accountKey] = created;
+  return created;
+}
+
+function addLedgerTransaction(account, transaction) {
+  const transactions = normalizeTransactions(account.transactions);
+  transactions.push({
+    id: transaction.id || makeId("tx"),
+    createdAt: transaction.createdAt || nowIso(),
+    type: transaction.type || "admin-credit",
+    amountCents: Number.isFinite(Number(transaction.amountCents)) ? Number(transaction.amountCents) : 0,
+    source: transaction.source,
+    note: transaction.note ? String(transaction.note).slice(0, 300) : undefined,
+  });
+  account.transactions = transactions.slice(-250);
+}
+
+function initFirebaseAdmin() {
+  if (getApps().length) return true;
+  try {
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "";
+    if (rawServiceAccount.trim()) {
+      initializeApp({
+        credential: cert(JSON.parse(rawServiceAccount)),
+        projectId: FIREBASE_PROJECT_ID || undefined,
+      });
+      return true;
+    }
+    initializeApp({
+      credential: applicationDefault(),
+      projectId: FIREBASE_PROJECT_ID || undefined,
+    });
+    return true;
+  } catch (error) {
+    console.warn("Firebase Admin unavailable; falling back to local usage-store.json.");
+    return false;
+  }
+}
+
+async function resolveUid() {
+  if (args.uid) return String(args.uid);
+  const ready = initFirebaseAdmin();
+  if (!ready) {
+    throw new Error("Firebase Admin is required when using --email.");
+  }
+  const user = await getAuth().getUserByEmail(String(args.email));
+  return user.uid;
+}
+
+async function loadLocalStore() {
+  try {
+    const raw = await fs.readFile(STORE_PATH, "utf8");
+    return normalizeStore(JSON.parse(raw));
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") {
+      return normalizeStore({});
+    }
+    throw error;
+  }
+}
+
+async function saveLocalStore(store) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+}
+
+function applyGrant(store, uid) {
+  const accountKey = getAccountKey(uid);
+  const account = ensureAccount(store, accountKey);
+  const before = {
+    walletCents: Math.round(Number(account.walletCents) || 0),
+    proCredits: Math.max(0, Math.round(Number(account.proCredits) || 0)),
+  };
+
+  if (walletCents > 0) {
+    account.walletCents = before.walletCents + walletCents;
+    addLedgerTransaction(account, {
+      type: "admin-credit",
+      amountCents: walletCents,
+      source: "wallet",
+      note: `${reason} | wallet grant`,
+    });
+  }
+
+  if (proCredits > 0) {
+    account.proCredits = before.proCredits + proCredits;
+    addLedgerTransaction(account, {
+      type: "admin-credit",
+      amountCents: 0,
+      source: "pro_credit",
+      note: `${reason} | pro-credit grant: ${proCredits}`,
+    });
+  }
+
+  return {
+    accountKey,
+    before,
+    after: {
+      walletCents: Math.round(Number(account.walletCents) || 0),
+      proCredits: Math.max(0, Math.round(Number(account.proCredits) || 0)),
+    },
+  };
+}
+
+async function run() {
+  const uid = await resolveUid();
+  const useFirestore = !FORCE_LOCAL_USAGE_STORE && initFirebaseAdmin();
+
+  let summary;
+  if (useFirestore) {
+    const db = getFirestore();
+    const ref = db.collection(USAGE_STORE_COLLECTION).doc(USAGE_STORE_DOC_ID);
+    if (dryRun) {
+      const snapshot = await ref.get();
+      const store = normalizeStore(snapshot.exists ? snapshot.data() : {});
+      summary = applyGrant(store, uid);
+    } else {
+      summary = await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const store = normalizeStore(snapshot.exists ? snapshot.data() : {});
+        const applied = applyGrant(store, uid);
+        transaction.set(ref, store, { merge: false });
+        return applied;
+      });
+    }
+  } else {
+    const store = await loadLocalStore();
+    summary = applyGrant(store, uid);
+    if (!dryRun) {
+      await saveLocalStore(store);
+    }
+  }
+
+  console.log(JSON.stringify({
+    ok: true,
+    dryRun,
+    uid,
+    email: args.email ? String(args.email) : null,
+    walletGrantedCents: walletCents,
+    proCreditsGranted: proCredits,
+    reason,
+    ...summary,
+  }, null, 2));
+}
+
+run().catch((error) => {
+  console.error(error?.message || error);
+  process.exit(1);
+});
