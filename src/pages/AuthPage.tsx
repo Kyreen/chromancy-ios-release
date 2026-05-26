@@ -18,6 +18,10 @@ function getFirebaseAuthMessage(error: any) {
     return "Google sign-in is not configured yet. Add the required Firebase client IDs for this platform and rebuild the app.";
   }
 
+  if (message.includes("Google sign-in on iOS is missing")) {
+    return "Google sign-in needs the iOS OAuth client ID in this iPhone build. Add VITE_GOOGLE_IOS_CLIENT_ID, then rebuild and sync iOS.";
+  }
+
   if (message.includes("Google sign-in did not return an ID token")) {
     return "Google sign-in could not complete. Please try again.";
   }
@@ -42,6 +46,7 @@ function getFirebaseAuthMessage(error: any) {
     case "auth/too-many-requests":
       return "Too many attempts. Please wait a bit and try again.";
     case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
       return "Sign-in was closed before it finished.";
     case "auth/unauthorized-domain":
       return "This login domain is not authorized in Firebase yet. Add chromancy.online and api.chromancy.online in Firebase Auth settings.";
