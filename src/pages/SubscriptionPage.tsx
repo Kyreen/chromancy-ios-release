@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { ChevronLeft, Crown } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { UserProfile, UserTier } from "../types";
@@ -28,15 +29,19 @@ function getBillingErrorMessage(error: unknown, fallback: string) {
   const lower = message.toLowerCase();
 
   if (lower.includes("device or user is not allowed") || lower.includes("not allowed to make a purchase")) {
-    return "This Google Play account or device is not allowed to make purchases yet. Use your Play license tester account and install the internal testing build from Play Console.";
+    return Capacitor.getPlatform() === "ios"
+      ? "This Apple ID or device is not allowed to make purchases yet. Use a Sandbox tester account and install the TestFlight or App Store build."
+      : "This Google Play account or device is not allowed to make purchases yet. Use your Play license tester account and install the internal testing build from Play Console.";
   }
 
   if (lower.includes("already owned") || lower.includes("item_already_owned") || lower.includes("already purchased")) {
-    return "This wallet product is being treated as already owned by Google Play. Wallet top-ups must be configured as consumable products in Google Play and RevenueCat so the same amount can be bought more than once.";
+    return Capacitor.getPlatform() === "ios"
+      ? "This wallet product is being treated as already owned by Apple. Wallet top-ups must be configured as consumable products in App Store Connect and RevenueCat."
+      : "This wallet product is being treated as already owned by Google Play. Wallet top-ups must be configured as consumable products in Google Play and RevenueCat so the same amount can be bought more than once.";
   }
 
   if (lower.includes("problem with the store") || lower.includes("store problem")) {
-    return "The store did not complete this purchase. Please check that the wallet product is active, configured as a consumable in Google Play and RevenueCat, and available to this tester account.";
+    return "The store did not complete this purchase. Please check that the wallet product is active, configured as a consumable in the store and RevenueCat, and available to this tester account.";
   }
 
   return message || fallback;
@@ -51,13 +56,13 @@ export function SubscriptionPage({ user, profile, tier, onBack }: SubscriptionPa
 
   const ensureLogin = async () => {
     if (user) return user;
-    toast.error("Please log in from the Account page first. Use email login on the Android app build.");
+    toast.error("Please log in from the Account page first.");
     return null;
   };
 
   const handleWalletTopUp = async (productId: string, amountZar: number) => {
     const agreed = window.confirm(
-      `Buy R${amountZar} wallet credit + VAT. Google Play will show the final localized price and tax/VAT where applicable.`,
+      `Buy R${amountZar} wallet credit + VAT. The store will show the final localized price and tax/VAT where applicable.`,
     );
     if (!agreed) return;
 
