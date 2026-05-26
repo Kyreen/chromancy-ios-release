@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+    <key>CAPACITOR_DEBUG</key>
 <string>$(CAPACITOR_DEBUG)</string>
 <key>CFBundleDevelopmentRegion</key>
 <string>en</string>
 <key>CFBundleDisplayName</key>
-        <string>Chromancy</string>
+        <string>Chromancy</string>
 <key>CFBundleExecutable</key>
 <string>$(EXECUTABLE_NAME)</string>
 <key>CFBundleIdentifier</key>
@@ -28,7 +28,7 @@
 <key>CFBundleURLSchemes</key>
 <array>
 <string>com.chromancy.app</string>
-<string>com.googleusercontent.apps.51608421110-m583gbe1uhompr475o7d40870d351pq5.apps.googleusercontent.com</string>
+<string>com.googleusercontent.apps.51608421110-m583gbe1uhompr475o7d40870d351pq5string>
 </array>
 </dict>
 </array>
@@ -71,6 +71,7 @@
 <true/>
 </dict>
 </plist>
+
 
 
 
