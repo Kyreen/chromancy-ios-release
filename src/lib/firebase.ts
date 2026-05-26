@@ -20,7 +20,9 @@ export const db = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) :
 function createAuthInstance() {
   try {
     return initializeAuth(app, {
-      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      persistence: Capacitor.isNativePlatform()
+        ? [browserLocalPersistence, indexedDBLocalPersistence]
+        : [indexedDBLocalPersistence, browserLocalPersistence],
     });
   } catch {
     return getAuth(app);
@@ -35,8 +37,11 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 appleProvider.addScope("email");
 appleProvider.addScope("name");
 
-const authPersistenceReady = setPersistence(auth, indexedDBLocalPersistence)
-  .catch(() => setPersistence(auth, browserLocalPersistence))
+const primaryPersistence = Capacitor.isNativePlatform() ? browserLocalPersistence : indexedDBLocalPersistence;
+const fallbackPersistence = Capacitor.isNativePlatform() ? indexedDBLocalPersistence : browserLocalPersistence;
+
+const authPersistenceReady = setPersistence(auth, primaryPersistence)
+  .catch(() => setPersistence(auth, fallbackPersistence))
   .catch((error) => {
     console.warn("Could not set Firebase auth persistence on startup", error);
   });
@@ -76,6 +81,27 @@ const APPLE_CLIENT_ID = (import.meta.env.VITE_APPLE_CLIENT_ID || "com.chromancy.
 const APPLE_REDIRECT_URL = (import.meta.env.VITE_APPLE_REDIRECT_URL || "").trim();
 let socialLoginInitPromise: Promise<void> | null = null;
 
+function getSocialLoginIdToken(result: any): string | null {
+  const candidates = [
+    result?.idToken,
+    result?.identityToken,
+    result?.jwt,
+    result?.authentication?.idToken,
+    result?.authentication?.identityToken,
+    result?.authorization?.idToken,
+    result?.authorization?.identityToken,
+  ];
+
+  const token = candidates.find((value) => typeof value === "string" && value.trim());
+  return token ? token.trim() : null;
+}
+
+function isUserCancelledAuth(error: unknown) {
+  const message = String((error as any)?.message || error || "").toLowerCase();
+  const code = String((error as any)?.code || "").toLowerCase();
+  return code.includes("cancel") || message.includes("cancel") || message.includes("closed") || message.includes("dismiss");
+}
+
 async function ensureSocialLoginInitialized() {
   if (!Capacitor.isNativePlatform()) return;
   if (socialLoginInitPromise) return socialLoginInitPromise;
@@ -96,6 +122,7 @@ async function ensureSocialLoginInitialized() {
         webClientId: GOOGLE_WEB_CLIENT_ID || undefined,
         iOSClientId: GOOGLE_IOS_CLIENT_ID || undefined,
         iOSServerClientId: GOOGLE_IOS_SERVER_CLIENT_ID || undefined,
+        mode: "online",
       },
       apple: {
         clientId: APPLE_CLIENT_ID || undefined,
@@ -103,7 +130,10 @@ async function ensureSocialLoginInitialized() {
         useProperTokenExchange: false,
       },
     });
-  })();
+  })().catch((error) => {
+    socialLoginInitPromise = null;
+    throw error;
+  });
 
   return socialLoginInitPromise;
 }
@@ -115,11 +145,13 @@ async function getNativeGoogleCredential() {
   // Passing custom scopes here triggers the plugin's extra authorization path.
   const response = await SocialLogin.login({
     provider: "google",
-    options: {},
+    options: {
+      scopes: ["email", "profile", "openid"],
+    },
   });
 
   const providerResult = response?.result;
-  const idToken = providerResult && "idToken" in providerResult ? providerResult.idToken ?? null : null;
+  const idToken = getSocialLoginIdToken(providerResult);
   if (!idToken) {
     throw new Error("Google sign-in did not return an ID token.");
   }
@@ -138,7 +170,7 @@ async function getNativeAppleCredential() {
   });
 
   const providerResult = response?.result;
-  const idToken = providerResult && "idToken" in providerResult ? providerResult.idToken ?? null : null;
+  const idToken = getSocialLoginIdToken(providerResult);
   if (!idToken) {
     throw new Error("Apple sign-in did not return an ID token.");
   }
@@ -283,7 +315,9 @@ export async function loginWithGoogle() {
       return result.user;
     } catch (error) {
       localStorage.removeItem("chromancy_google_signin_pending");
-      console.error("Native Google login failed", error);
+      if (!isUserCancelledAuth(error)) {
+        console.error("Native Google login failed", error);
+      }
       throw error;
     }
   }
@@ -306,7 +340,9 @@ export async function loginWithApple() {
       await ensureUserProfile(result.user);
       return result.user;
     } catch (error) {
-      console.error("Native Apple login failed", error);
+      if (!isUserCancelledAuth(error)) {
+        console.error("Native Apple login failed", error);
+      }
       throw error;
     }
   }
@@ -647,5 +683,4 @@ function clearClientSensitiveState() {
     // no-op
   }
 }
-
 
