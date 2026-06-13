@@ -1,9 +1,0 @@
-{
-  "name": "CHROMANCY",
-  "description": "Creative Intelligence Platform - AI-powered design, photo, and video enhancement.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone",
-    "geolocation"
-  ]
-}
