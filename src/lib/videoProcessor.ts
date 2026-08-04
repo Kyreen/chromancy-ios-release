@@ -158,15 +158,60 @@ export async function getFFmpeg() {
     const { FFmpeg, toBlobURL } = await loadModules();
     if (!ffmpeg) ffmpeg = new FFmpeg();
 
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+    // The core is now BUNDLED with the app (public/ffmpeg) and served from the app's own
+    // origin. Loading it cross-origin from a CDN does not work inside the iOS Capacitor
+    // WKWebView (the app runs on capacitor://localhost), which is why FFmpeg-backed tools
+    // such as Video Reverse failed on iOS while the canvas-based tools kept working.
+    const localBase = new URL("ffmpeg/", document.baseURI).href.replace(/\/$/, "");
+    const cdnBase = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-    });
+    const attempts: Array<{ label: string; load: () => Promise<unknown> }> = [
+      {
+        // Preferred: same-origin URLs passed straight through. No fetch, no blob URL —
+        // the most reliable combination inside a native webview.
+        label: "bundled",
+        load: () => ffmpeg!.load({
+          coreURL: `${localBase}/ffmpeg-core.js`,
+          wasmURL: `${localBase}/ffmpeg-core.wasm`,
+        }),
+      },
+      {
+        // Same bundled files, but converted to blob URLs (needed by some webview versions).
+        label: "bundled-blob",
+        load: async () => ffmpeg!.load({
+          coreURL: await toBlobURL(`${localBase}/ffmpeg-core.js`, "text/javascript"),
+          wasmURL: await toBlobURL(`${localBase}/ffmpeg-core.wasm`, "application/wasm"),
+        }),
+      },
+      {
+        // Last resort for web builds where the bundled asset is missing.
+        label: "cdn",
+        load: async () => ffmpeg!.load({
+          coreURL: await toBlobURL(`${cdnBase}/ffmpeg-core.js`, "text/javascript"),
+          wasmURL: await toBlobURL(`${cdnBase}/ffmpeg-core.wasm`, "application/wasm"),
+        }),
+      },
+    ];
 
-    (ffmpeg as any).__loaded = true;
-    return ffmpeg;
+    let lastError: unknown = null;
+    for (const attempt of attempts) {
+      try {
+        await attempt.load();
+        (ffmpeg as any).__loaded = true;
+        (ffmpeg as any).__source = attempt.label;
+        return ffmpeg;
+      } catch (error) {
+        lastError = error;
+        console.warn(`FFmpeg core failed to load via "${attempt.label}".`, error);
+      }
+    }
+
+    // Reset so a later attempt can retry from scratch instead of reusing a dead instance.
+    loadPromise = null;
+    ffmpeg = null;
+    throw new Error(
+      `The video engine could not start on this device. ${lastError instanceof Error ? lastError.message : String(lastError || "")}`.trim(),
+    );
   })();
 
   return loadPromise;
